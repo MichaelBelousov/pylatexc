@@ -9,7 +9,9 @@ to formatted values.
 # this current 'solution' is extremely naive
 
 import sys
-from pyparsing import *  # I'm sorry PEP for I have sinned
+import os
+sys.path.insert(0, '../../')  # this is blasphemous
+# from pyparsing import *  # I'm sorry PEP for I have sinned
 import re
 from textwrap import dedent
 

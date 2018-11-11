@@ -10,4 +10,7 @@ import csv
 stdin = csv.reader(sys.stdin)
 
 for ln in stdin:
-    print('\t'.join((x.strip() for x in ln)))
+    ln = (x.strip() for x in ln)
+    ln = (str(x) for x in ln)
+    ln = (x.replace(',','') for x in ln)
+    print('\t'.join(ln))
