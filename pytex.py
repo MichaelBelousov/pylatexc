@@ -19,25 +19,16 @@ from pyparsing import *
 LBRACE = '{'
 RBRACE = '}'
 NOTBRACE = CharsNotIn(LBRACE + RBRACE)
+BSLASH = '\\'
 
-SINGLE_QUOTE = "'"
-DOUBLE_QUOTE = '"'
-REGULAR_QUOTE = Literal(SINGLE_QUOTE) | Literal(DOUBLE_QUOTE)
-TRIPLE_SINGLE_QUOTE = "'''"
-TRIPLE_DOUBLE_QUOTE = '"""'
-TRIPLE_QUOTE = Literal(TRIPLE_SINGLE_QUOTE) | Literal(TRIPLE_DOUBLE_QUOTE)
+p_single_quote_str = QuotedString("'", escChar=BSLASH, unquoteResults=False)
+p_double_quote_str = QuotedString('"', escChar=BSLASH, unquoteResults=False)
+p_triple_single_quote_str = QuotedString("'''", escChar=BSLASH, unquoteResults=False)
+p_triple_double_quote_str = QuotedString('"""', escChar=BSLASH, unquoteResults=False)
 
-UNESCAPED_REGULAR_QUOTE = PrecededBy(CharsNotIn('\\')) + REGULAR_QUOTE
-UNESCAPED_TRIPLE_QUOTE = PrecededBy(CharsNotIn('\\')) + TRIPLE_QUOTE
-
-UNESCAPED_QUOTE = ( UNESCAPED_TRIPLE_QUOTE 
-                  | UNESCAPED_REGULAR_QUOTE )
-NOTQUOTE = CharsNotIn(SINGLE_QUOTE + DOUBLE_QUOTE)
-
-p_pyexec_start = Literal(r'\begin{pyexec}')
-p_pyexec_end   = Literal(r'\end{pyexec}')
-p_pyeval_start = Literal(r'\pyeval')
-
+# XXX: this one might not be necessary...
+# a section of text where all recursive braced sections end, indicating
+# valid python code
 p_closed_brace_text = Forward()
 p_closed_brace_text << ( ZeroOrMore( Optional(NOTBRACE)
                                     + LBRACE
@@ -47,20 +38,28 @@ p_closed_brace_text << ( ZeroOrMore( Optional(NOTBRACE)
 p_closed_brace_text = Combine(p_closed_brace_text)
 
 
-# need to add support for single quote and triple quote recognition, as well
-# as escaped quote recognition
-p_even_quote_amt = ( ZeroOrMore( Optional(NOTQUOTE)
-                               + UNESCAPED_QUOTE
-                               + Optional(NOTQUOTE)
-                               + UNESCAPED_QUOTE )
-                   + NOTQUOTE )
+SINGLE_QUOTE = "'"
+DOUBLE_QUOTE = '"'
+# a section of text where all quoted literals end, indicating
+# valid python code
+p_closed_quote_text = Combine(
+                        ZeroOrMore( Optional(CharsNotIn(SINGLE_QUOTE + DOUBLE_QUOTE))
+                                  + ( p_triple_single_quote_str
+                                    | p_triple_double_quote_str
+                                    | p_single_quote_str
+                                    | p_double_quote_str ) )
+                        + Optional(CharsNotIn('\'"')) )
 
-# NOTQUOTED(py_exec
+
+p_pyexec_start = Literal(r'\begin{pyexec}')
+p_pyexec_end   = Literal(r'\end{pyexec}')
+p_pyeval_start = Literal(r'\pyeval')
+
 # Combine(
 p_pyexec = ( p_pyexec_start
-           + Combine(Optional( p_even_quote_amt
+           + Combine(Optional( p_closed_quote_text
                              + p_pyexec_end
-                             + p_even_quote_amt ))       ('value')
+                             + p_closed_quote_text ))       ('value')
            + p_pyexec_end )
 
 
