@@ -13,59 +13,58 @@ import os
 import re
 from textwrap import dedent
 from pyparsing import *
+from pyparsing import Optional as Opt
 
 ##### Parser #####
+
 
 LBRACE = '{'
 RBRACE = '}'
 NOTBRACE = CharsNotIn(LBRACE + RBRACE)
 BSLASH = '\\'
+SINGLEQUOTE = "'"
+DOUBLEQUOTE = '"'
+NOTQUOTE = CharsNotIn(SINGLEQUOTE + DOUBLEQUOTE)
 
-p_single_quote_str = QuotedString("'", escChar=BSLASH, unquoteResults=False)
-p_double_quote_str = QuotedString('"', escChar=BSLASH, unquoteResults=False)
+
+p_single_quote_str        = QuotedString("'",   escChar=BSLASH, unquoteResults=False)
+p_double_quote_str        = QuotedString('"',   escChar=BSLASH, unquoteResults=False)
 p_triple_single_quote_str = QuotedString("'''", escChar=BSLASH, unquoteResults=False)
 p_triple_double_quote_str = QuotedString('"""', escChar=BSLASH, unquoteResults=False)
 
-# XXX: this one might not be necessary...
+p_string_literal = ( p_triple_single_quote_str
+                   | p_triple_double_quote_str
+                   | p_single_quote_str
+                   | p_double_quote_str )
+
+p_python_ignore = ( p_string_literal
+                  | pythonStyleComment)
+
 # a section of text where all recursive braced sections end, indicating
-# valid python code
+# that a \pyeval{ {1,2,3,{4,5}},{6,7} } expression can be ended
 p_closed_brace_text = Forward()
-p_closed_brace_text << ( ZeroOrMore( Optional(NOTBRACE)
+p_closed_brace_text << Combine(
+                        ( ZeroOrMore( Opt(NOTBRACE)
                                     + LBRACE
                                     + p_closed_brace_text
                                     + RBRACE )
-                        + Optional(NOTBRACE) )
-p_closed_brace_text = Combine(p_closed_brace_text)
-
-
-SINGLE_QUOTE = "'"
-DOUBLE_QUOTE = '"'
-# a section of text where all quoted literals end, indicating
-# valid python code
-p_closed_quote_text = Combine(
-                        ZeroOrMore( Optional(CharsNotIn(SINGLE_QUOTE + DOUBLE_QUOTE))
-                                  + ( p_triple_single_quote_str
-                                    | p_triple_double_quote_str
-                                    | p_single_quote_str
-                                    | p_double_quote_str ) )
-                        + Optional(CharsNotIn('\'"')) )
+                        + Opt(NOTBRACE) )
+                       .ignore(p_python_ignore))
 
 
 p_pyexec_start = Literal(r'\begin{pyexec}')
 p_pyexec_end   = Literal(r'\end{pyexec}')
 p_pyeval_start = Literal(r'\pyeval')
 
-# Combine(
-p_pyexec = ( p_pyexec_start
-           + Combine(Optional( p_closed_quote_text
-                             + p_pyexec_end
-                             + p_closed_quote_text ))       ('value')
-           + p_pyexec_end )
+
+p_pyexec = nestedExpr(p_pyexec_start,
+                      p_pyexec_end,
+                      ignoreExpr=p_string_literal|pythonStyleComment)
 
 
 p_pyeval = ( p_pyeval_start
            + LBRACE
-           + Combine(p_closed_brace_text)                ('value')
+           + p_closed_brace_text   ('val')
            + RBRACE )
 
 
