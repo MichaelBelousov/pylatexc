@@ -1,11 +1,7 @@
 #/usr/bin/env python
-
 """
 evaluate pyexec and pyeval environments and macros in LaTeX code
-to formatted values.
-
-I was going to use pyparsing for the parsing, but I found it
-unsuited for text templating, check the README for todos
+to formatted values
 """
 
 import sys
@@ -52,13 +48,13 @@ class PyTeXCSyntaxError(SyntaxError):
                  'colno': colno
                }
 
-def main():
+def main(infile, outfile):
     """run the PyTeXC source transformer"""
 
     doc_scope = {}
     out_text = ''
 
-    src = sys.stdin.read()
+    src = infile.read()
     limit = len(src)
 
     last = 0
@@ -79,7 +75,7 @@ def main():
         # either indicator via find? (at least just clearer)
         # maybe not if the loop is JITed
     out_text += src[last:i]
-    sys.stdout.write(out_text)
+    outfile.write(out_text)
 
 
 def skip_quote(cursor, text):
@@ -176,4 +172,15 @@ def consume_pyeval(cursor, text, eval_scope):
 
 
 if __name__ == '__main__':
-    main()
+    # TODO: validate arguments to these macros
+    parser = argparse.ArgumentParser(
+            description='pytexc, a pytex file evaluator')
+    parser.add_argument(
+	'input_file', default=sys.stdin, type=argparse.FileType('r'),
+	help='the input file to read from, defaults to stdin')
+    parser.add_argument(
+	'-o', '--output-file', default=sys.stdout,
+	type=argparse.FileType('w'),
+	help='the output file to write to, defaults to stdout')
+    args = parser.parse_args()
+    main(args.input_file, args.output_file)
