@@ -12,7 +12,7 @@
 
 hello \emph{stuff}
 \pyeval{ json.dumps(None) }
-\pyeval{ {1,2,3}+{3,4} }
+\pyeval{ {1,2,3}|{3,4} }
 \pyeval{ x, v }
 
 \end{document}

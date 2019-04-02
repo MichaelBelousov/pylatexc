@@ -49,20 +49,24 @@ def main():
     src = sys.stdin.read()
     limit = len(src)
 
+    last = 0
     i = 0
     while i < limit:
         if src[i:i+len(BEGIN_PYEXEC)] == BEGIN_PYEXEC:
+            out_text += src[last:i]
             nxt = consume_pyexec(i, src, doc_scope)
-            out_text += src[i:nxt]
-            i = nxt
+            i = last = nxt
         elif src[i:i+len(PYEVAL)] == PYEVAL:
+            out_text += src[last:i]
             nxt, out = consume_pyeval(i, src, doc_scope)
-            out_text += out + src[i:nxt]
-            i = nxt
+            out_text += str(out)
+            i = last = nxt
         else:
             i += 1
         # TODO: should be faster to find the next occurrence of
         # either indicator via find? (at least just clearer)
+    out_text += src[last:i]
+    sys.stdout.write(out_text)
 
 
 def skip_quote(cursor: int, text: str) -> int:
@@ -107,6 +111,7 @@ def skip_comment(cursor: int, text: str) -> int:
     beginning of the comment.
     """
     limit = len(text)
+    i = cursor
     while i < limit:
         was_newline = text[i] == '\n'
         i += 1
@@ -118,13 +123,15 @@ def skip_comment(cursor: int, text: str) -> int:
 def consume_pyexec(cursor: int, text: str,
                    exec_scope: dict) -> int:
     i = cursor
-    while i < len(text):
+    limit = len(text)
+    while i < limit:
         if text[i] in ('"', "'"):
             i = skip_quote(i, text)
         elif text[i] == '#':
-            i = skip_quote(i, text)
+            i = skip_comment(i, text)
         elif text[i:i+len(END_PYEXEC)] == END_PYEXEC:
-            exec(text[cursor:i], exec_scope)
+            exec(dedent(text[cursor+len(BEGIN_PYEXEC):i]),
+                 exec_scope)
             return i + len(END_PYEXEC)
         else:
             i += 1
@@ -139,11 +146,13 @@ def consume_pyeval(cursor: int, text: str,
     assuming the cursor is the next location from the opening, and
     then the output of the evaluation
     """
+    limit = len(text)
+    i = cursor + len(PYEVAL)
     openers_stack = [i-1]
-    i = cursor
     while i < limit:
         if not openers_stack:
-            return i, eval(text[cursor:i], scope)
+            return i, eval(text[cursor+len(PYEVAL):i-1].strip(),
+                           eval_scope)
         if text[i] == '{':
             openers_stack.append(i)
         if text[i] == '}':
