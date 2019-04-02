@@ -21,7 +21,10 @@ from pyparsing import Optional as Opt
 LBRACE = '{'
 RBRACE = '}'
 NOTBRACE = CharsNotIn(LBRACE + RBRACE)
+
 BSLASH = '\\'
+NOTBSLASH = CharsNotIn(BSLASH)
+
 SINGLEQUOTE = "'"
 DOUBLEQUOTE = '"'
 NOTQUOTE = CharsNotIn(SINGLEQUOTE + DOUBLEQUOTE)
@@ -52,18 +55,25 @@ p_closed_brace_text << Combine(
                        .ignore(p_python_ignore))
 
 
-p_pyexec_start = Literal(r'\begin{pyexec}')
-p_pyexec_end   = Literal(r'\end{pyexec}')
-p_pyeval_start = Literal(r'\pyeval')
+p_pyexec_begin = r'\begin{pyexec}'
+p_pyexec_end   = r'\end{pyexec}'
+p_pyeval = r'\pyeval'
+
+# TODO: SkipTo(X|Y) + ((X + ...) | (Y + ...))
+
+p_pyexec_content = (OneOrMore(~p_python_ignore +  
+        ~Literal(p_pyexec_begin) + ~Literal(p_pyexec_end) + 
+        White(exact=1)|Word(printables,exact=1)) 
+        )#.setParseAction(lambda t:t[0].strip())) 
 
 
-p_pyexec = nestedExpr(p_pyexec_start,
-                      p_pyexec_end,
-                      ignoreExpr=p_string_literal|pythonStyleComment)
+p_pyexec = Combine(nestedExpr(p_pyexec_begin,
+                              p_pyexec_end,
+                              content=p_pyexec_content,
+                              ignoreExpr=p_python_ignore))
 
 
-p_pyeval = ( p_pyeval_start
-           + LBRACE
+p_pyeval = ( p_pyeval + LBRACE
            + p_closed_brace_text   ('val')
            + RBRACE )
 
