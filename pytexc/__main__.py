@@ -26,7 +26,7 @@ class PyTeXCSyntaxError(SyntaxError):
         zclamp = lambda t: max(0, t)
         # maximum of src size
         mclamp = lambda t: min(t, len(src))
-        msg = ('{err_desc}: discovered at line {lineno},'
+        msg = ('{err_desc}: discovered at line {lineno}, '
                'col {colno}.\n'
                '{line_visual}').format(err_desc=desc,
                                        **self.make_err_info(src, loc))
@@ -176,7 +176,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
             description='pytexc, a pytex file evaluator')
     parser.add_argument(
-	'input_file', default=sys.stdin, type=argparse.FileType('r'),
+	'-i', '--input-file', default=sys.stdin,
+        type=argparse.FileType('r'),
 	help='the input file to read from, defaults to stdin')
     parser.add_argument(
 	'-o', '--output-file', default=sys.stdout,
