@@ -1,47 +1,59 @@
-#/usr/bin/env python3
+#/usr/bin/env python
 
 """
 evaluate pyexec and pyeval environments and macros in LaTeX code
 to formatted values.
 
 I was going to use pyparsing for the parsing, but I found it
-unsuited for text templating, I probably should have gone with
-jinja2 to be completely honest
+unsuited for text templating, check the README for todos
 """
-
-# TODO: use python's six module so users can determine their python
-# version by running this script in their own interpreter
 
 import sys
 import os
-import re
 from textwrap import dedent
 import six
-
+import argparse
 
 BEGIN_PYEXEC = r'\begin{pyexec}'
 END_PYEXEC   = r'\end{pyexec}'
 PYEVAL = r'\pyeval{'
 
+# TODO: make a "fatal" error?
 
-class ParseException(Exception):
-    """an exception that ocurred during parsing at a location"""
+class PyTeXCSyntaxError(SyntaxError):
+    """
+    A PyTexC syntax error that ocurred during parsing
+    at a location in the source text.
+    """
     def __init__(self, src, desc, loc):
         # minimum of 0
         zclamp = lambda t: max(0, t)
         # maximum of src size
         mclamp = lambda t: min(t, len(src))
-        nl_chr = '\n'
-        nl_lit = r'\n'
-        super().__init__(dedent(f"""
-            {desc}: discovered at location {loc}
-            { src[zclamp(loc-10):mclamp(loc+10)]
-                .replace(nl_chr, nl_lit) }
-            { (loc-zclamp(loc-9))*' '+'^'+' '*(mclamp(loc+10)-loc) }
-            """))
+        msg = ('{err_desc}: discovered at line {lineno},'
+               'col {colno}.\n'
+               '{line_visual}').format(err_desc=desc,
+                                       **self.make_err_info(src, loc))
+        super(SyntaxError, self).__init__(msg)
+        sys.stderr.write(msg)
+        # TODO: make a more appropriate separation for a program halting
+        # error?
+        sys.exit(1)
+
+    @staticmethod
+    def make_err_info(src, err_loc):
+        """find information about a source syntax error"""
+        lineno = src[:err_loc].count('\n')
+        line = src.split('\n')[lineno]
+        last_newline_loc = src.rfind('\n', 0, err_loc-1)
+        colno = err_loc - last_newline_loc + 1
+        return { 'line_visual': "{0}\n{1}^".format(line, colno*' '),
+                 'lineno': lineno,
+                 'colno': colno
+               }
 
 def main():
-    """run the pytex source transformer"""
+    """run the PyTeXC source transformer"""
 
     doc_scope = {}
     out_text = ''
@@ -65,11 +77,12 @@ def main():
             i += 1
         # TODO: should be faster to find the next occurrence of
         # either indicator via find? (at least just clearer)
+        # maybe not if the loop is JITed
     out_text += src[last:i]
     sys.stdout.write(out_text)
 
 
-def skip_quote(cursor: int, text: str) -> int:
+def skip_quote(cursor, text):
     """
     returns the index after a quote in a text, assuming the
     cursor is at the beginning of the quote
@@ -77,7 +90,7 @@ def skip_quote(cursor: int, text: str) -> int:
 
     limit = len(text)
 
-    def determine_quote_type() -> str:
+    def determine_quote_type():
         first = text[cursor]
         result = first
         i = cursor + 1
@@ -88,7 +101,7 @@ def skip_quote(cursor: int, text: str) -> int:
 
     indicator = determine_quote_type()
 
-    def is_escaped(cursor: int) -> bool:
+    def is_escaped(cursor):
         if len(indicator) > 1:
             return False
         else:
@@ -101,10 +114,10 @@ def skip_quote(cursor: int, text: str) -> int:
             return i + len(indicator)
         i += 1
 
-    raise ParseException(text, 'Unterminated Quote', cursor)
+    raise PyTeXCSyntaxError(text, 'Unterminated Quote', cursor)
 
 
-def skip_comment(cursor: int, text: str) -> int:
+def skip_comment(cursor, text):
     """
     returns the index after a comment in a text, by skipping
     to the next line, assuming that the cursor is at the
@@ -120,8 +133,7 @@ def skip_comment(cursor: int, text: str) -> int:
     return i;
 
 
-def consume_pyexec(cursor: int, text: str,
-                   exec_scope: dict) -> int:
+def consume_pyexec(cursor, text, exec_scope):
     i = cursor
     limit = len(text)
     while i < limit:
@@ -130,21 +142,20 @@ def consume_pyexec(cursor: int, text: str,
         elif text[i] == '#':
             i = skip_comment(i, text)
         elif text[i:i+len(END_PYEXEC)] == END_PYEXEC:
-            exec(dedent(text[cursor+len(BEGIN_PYEXEC):i]),
-                 exec_scope)
+            six.exec_(dedent(text[cursor+len(BEGIN_PYEXEC):i]),
+                      exec_scope)
             return i + len(END_PYEXEC)
         else:
             i += 1
     # should never reach here
-    raise ParseException(text, 'Unterminated Pyexec Expression',
-                         cursor)
+    raise PyTeXCSyntaxError(text, 'Unterminated Pyexec Expression',
+                            cursor)
 
-def consume_pyeval(cursor: int, text: str,
-                   eval_scope: dict) -> (int, str):
+def consume_pyeval(cursor, text, eval_scope):
     """
-    returns first the index after a pyeval expression in a text,
-    assuming the cursor is the next location from the opening, and
-    then the output of the evaluation
+    returns in a tuple first the index after a pyeval expression in
+    a text, assuming the cursor is the next location from the opening,
+    and then the output of the evaluation
     """
     limit = len(text)
     i = cursor + len(PYEVAL)
@@ -160,8 +171,8 @@ def consume_pyeval(cursor: int, text: str,
         i += 1
 
     # should never reach here
-    raise ParseException(text, 'Unterminated Brace Expression',
-                         openers_stack.pop())
+    raise PyTeXCSyntaxError(text, 'Unterminated Brace Expression',
+                            openers_stack.pop())
 
 
 if __name__ == '__main__':
