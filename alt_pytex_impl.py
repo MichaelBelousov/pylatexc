@@ -5,7 +5,8 @@ evaluate pyexec and pyeval environments and macros in LaTeX code
 to formatted values.
 
 I was going to use pyparsing for the parsing, but I found it
-unsuited for text templating
+unsuited for text templating, I probably should have gone with
+jinja2 to be completely honest
 """
 
 # TODO: use python's six module so users can determine their python
@@ -23,17 +24,25 @@ END_PYEXEC   = r'\end{pyexec}'
 PYEVAL = r'\pyeval{'
 
 
-class ParseException (Exception):
+class ParseException(Exception):
     """an exception that ocurred during parsing at a location"""
-    def __init__(self, desc, loc):
-        self.desc = desc
-        self.loc = loc
-    def __repr__(self):
-        return f'{self.desc}: discovered at location {loc}'
-
+    def __init__(self, src, desc, loc):
+        # minimum of 0
+        zclamp = lambda t: max(0, t)
+        # maximum of src size
+        mclamp = lambda t: min(t, len(src))
+        nl_chr = '\n'
+        nl_lit = r'\n'
+        super().__init__(dedent(f"""
+            {desc}: discovered at location {loc}
+            { src[zclamp(loc-10):mclamp(loc+10)]
+                .replace(nl_chr, nl_lit) }
+            { (loc-zclamp(loc-9))*' '+'^'+' '*(mclamp(loc+10)-loc) }
+            """))
 
 def main():
     """run the pytex source transformer"""
+
     doc_scope = {}
     out_text = ''
 
@@ -53,7 +62,7 @@ def main():
         else:
             i += 1
         # TODO: should be faster to find the next occurrence of
-        # either indicator
+        # either indicator via find? (at least just clearer)
 
 
 def skip_quote(cursor: int, text: str) -> int:
@@ -71,6 +80,7 @@ def skip_quote(cursor: int, text: str) -> int:
         while text[i] == first and i < limit:
             result += text[i]
             i += 1
+        return result
 
     indicator = determine_quote_type()
 
@@ -87,13 +97,13 @@ def skip_quote(cursor: int, text: str) -> int:
             return i + len(indicator)
         i += 1
 
-    raise ParseException('Unterminated Quote', cursor)
+    raise ParseException(text, 'Unterminated Quote', cursor)
 
 
 def skip_comment(cursor: int, text: str) -> int:
     """
     returns the index after a comment in a text, by skipping
-    to the next line, assumiing that the cursor is at the
+    to the next line, assuming that the cursor is at the
     beginning of the comment.
     """
     limit = len(text)
@@ -110,16 +120,16 @@ def consume_pyexec(cursor: int, text: str,
     i = cursor
     while i < len(text):
         if text[i] in ('"', "'"):
-            i = skip_quote(i, src)
+            i = skip_quote(i, text)
         elif text[i] == '#':
-            i = skip_quote(i, src)
+            i = skip_quote(i, text)
         elif text[i:i+len(END_PYEXEC)] == END_PYEXEC:
             exec(text[cursor:i], exec_scope)
             return i + len(END_PYEXEC)
         else:
             i += 1
     # should never reach here
-    raise ParseException('Unterminated Pyexec Expression',
+    raise ParseException(text, 'Unterminated Pyexec Expression',
                          cursor)
 
 def consume_pyeval(cursor: int, text: str,
@@ -134,14 +144,14 @@ def consume_pyeval(cursor: int, text: str,
     while i < limit:
         if not openers_stack:
             return i, eval(text[cursor:i], scope)
-        if text[i] = '{':
+        if text[i] == '{':
             openers_stack.append(i)
-        if text[i] = '}':
+        if text[i] == '}':
             openers_stack.pop()
         i += 1
 
     # should never reach here
-    raise ParseException('Unterminated Brace Expression',
+    raise ParseException(text, 'Unterminated Brace Expression',
                          openers_stack.pop())
 
 
