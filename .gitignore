@@ -1,0 +1,23 @@
+# latex compiler output
+*.aux
+*.log
+*.fls
+*.fdb*
+*.pdf
+*.dvi
+
+# generated
+*.csvdat
+
+# python crud
+*.pyc
+__pycache__
+*.egg-info
+
+#vim
+*.swp
+*.swo
+
+#executable (appears on msys2/ mingw compilation)
+*.exe
+
