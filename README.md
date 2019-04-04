@@ -19,6 +19,19 @@ You can still however install with pip's handy git targets.
 pip install git+https://github.com/MichaelBelousov/PyTeXc.git
 ```
 
+## Usage
+
+You can use the optional arguments or default to stdin/stdout,
+invoking from python using its module argument is ideal because that
+way you can control your python version by the interpreter you are
+invoking.
+
+```Sh
+python -m pytexc -i path/to/input.file -o path/to/output.file
+python -m pytexc < path/to/input.file > path/to/output.file
+python3 -m pytexc < path/to/input.file > path/to/output.file
+```
+
 ## What is it?
 
 Allows you to use Python in your LaTeX document (whichever supported
