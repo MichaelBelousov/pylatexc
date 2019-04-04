@@ -42,7 +42,7 @@ an evaluation macro:
 
 \begin{pyexec}
     import math  # you can define your calculations in the document!
-    x = 100
+    x = math.log(100)
 \end{pyexec}
 
 \begin{document}
@@ -59,10 +59,14 @@ Try something more advanced, like grabbing the collected works of
 Shakespeare from MIT's portal and generating a word frequency chart
 in your document with pgf plots.
 
+### Notes
+
+Checkout cog (I'll provide a link next time I'm committing from a
+computer), I prefer the syntax in this method. It feels more homey.
+
 ### TODO:
 
-* replace slow string concatentations with buffered writes and splices with views
+* replace slow string concatentations with buffered writes and slices with views
 * hide internal functions and add a higher level interface
-* move to independent github repo
 * add config of the macros used (e.g. pyeval => pev)
 
