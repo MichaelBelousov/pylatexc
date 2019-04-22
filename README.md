@@ -1,7 +1,6 @@
-
 # PyLaTeXc
 
-A source transformer of pytex source files (LaTeX with embedded python)
+A source transformer of pylatex source files (LaTeX with embedded python)
 into valid LaTeX.
 
 ```LaTeX
@@ -27,4 +26,3 @@ in your document.
 * hide internal functions and add a higher level interface
 * move to independent github repo
 * add config of the macros used (e.g. pyeval => pev)
-

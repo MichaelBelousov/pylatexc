@@ -174,7 +174,7 @@ def consume_pyeval(cursor, text, eval_scope):
 if __name__ == '__main__':
     # TODO: validate arguments to these macros
     parser = argparse.ArgumentParser(
-            description='pytexc, a pytex file evaluator')
+            description='pylatexc, a pylatex file evaluator')
     parser.add_argument(
 	'-i', '--input-file', default=sys.stdin,
         type=argparse.FileType('r'),
