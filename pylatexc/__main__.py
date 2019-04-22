@@ -160,11 +160,14 @@ def consume_pyeval(cursor, text, eval_scope):
         if not openers_stack:
             return i, eval(text[cursor+len(PYEVAL):i-1].strip(),
                            eval_scope)
-        if text[i] == '{':
-            openers_stack.append(i)
-        if text[i] == '}':
-            openers_stack.pop()
-        i += 1
+        if text[i] in ('"', "'"):
+            i = skip_quote(i, text)
+        else:
+            if text[i] == '{':
+                openers_stack.append(i)
+            elif text[i] == '}':
+                openers_stack.pop()
+            i += 1
 
     # should never reach here
     raise PyTeXCSyntaxError(text, 'Unterminated Brace Expression',
