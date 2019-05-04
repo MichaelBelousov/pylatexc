@@ -6,6 +6,35 @@ A preprocessor/evaluator of pylatex source files
 Let me know if you think this would be more readily achieved with
 a compiler plugin, I opted for the script-fu solution.
 
+## What is it?
+
+Allows you to use Python in your LaTeX document (whichever supported
+version you have installed) by means of an execution environment and
+an evaluation macro:
+
+```LaTeX
+
+\begin{pyexec}
+    import math  # you can define your calculations in the document!
+    x = math.log(100)
+\end{pyexec}
+
+\begin{document}
+
+The value of $x$ is \pyeval{x}!
+
+And the value of $y$ is \pyeval{{1,2,3}&{2,1}}
+
+\end{document}
+```
+
+It's all just textual substitution, where the pyexec environments
+disappear and the pyevals are replaced with their formatted equivalents.  
+
+Try something more advanced, like grabbing the collected works of
+Shakespeare from MIT's portal and generating a word frequency chart
+in your document with pgf plots.
+
 ## Install
 
 I haven't put it up on PyPI, I would want to set up some unit tests
@@ -30,33 +59,6 @@ python -m pylatexc -i path/to/input.file -o path/to/output.file
 python -m pylatexc < path/to/input.file > path/to/output.file
 python3 -m pylatexc < path/to/input.file > path/to/output.file
 ```
-
-## What is it?
-
-Allows you to use Python in your LaTeX document (whichever supported
-version you have installed) by means of an execution environment and
-an evaluation macro:
-
-```LaTeX
-
-\begin{pyexec}
-    import math  # you can define your calculations in the document!
-    x = math.log(100)
-\end{pyexec}
-
-\begin{document}
-
-The value of $x$ is \pyeval{x}!
-
-\end{document}
-```
-
-It's all just textual substitution, where the pyexec environments
-disappear and the pyevals are replaced with their formatted equivalents.  
-
-Try something more advanced, like grabbing the collected works of
-Shakespeare from MIT's portal and generating a word frequency chart
-in your document with pgf plots.
 
 ### Notes
 
