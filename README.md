@@ -60,8 +60,11 @@ in your document with pgf plots.
 
 ### Notes
 
-Checkout cog (I'll provide a link next time I'm committing from a
-computer), I prefer the syntax in this method. It feels more homey.
+Checkout [cog](https://nedbatchelder.com/code/cog/), I prefer the syntax in pylatexc's method.
+It feels more homey.
+
+I wrote an article about this on my blog:
+[https://mikemikeb.com/#/blog](https://mikemikeb.com/#/blog)
 
 ### TODO:
 
